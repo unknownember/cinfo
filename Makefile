@@ -14,3 +14,8 @@ install: cinfo
 
 clean:
 	rm -f cinfo
+
+.PHONY: test
+
+test: cinfo
+	sh tests/cli.sh

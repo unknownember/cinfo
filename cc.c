@@ -13,7 +13,9 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-static int sysinfo(void)
+#define VERSION "1.1.1"
+
+static int sysinfo_func(void)
 {
     struct utsname u;
     long cpus = sysconf(_SC_NPROCESSORS_ONLN);
@@ -527,11 +529,11 @@ int main(int argc, char *argv[])
     }
 
     if (strcmp(argv[1], "--version") == 0) {
-        puts("cinfo 1.1.0");
+        printf("cinfo %s\n", VERSION);
         return 0;
     }
     if (strcmp(argv[1], "--sysinfo") == 0)
-        return sysinfo();
+        return sysinfo_func();
     if (strcmp(argv[1], "--memory") == 0)
         return show_memory();
     if (strcmp(argv[1], "--load") == 0)
@@ -566,7 +568,7 @@ int main(int argc, char *argv[])
 
     if (strcmp(argv[1], "--all") == 0) {
         int status = 0;
-        if (sysinfo() != 0) status = 1;
+        if (sysinfo_func() != 0) status = 1;
         putchar('\n');
         if (show_memory() != 0) status = 1;
         putchar('\n');
