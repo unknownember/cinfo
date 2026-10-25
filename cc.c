@@ -89,6 +89,40 @@ static int show_load(void)
 }
 
 
+static int show_uptime(void)
+{
+    FILE *fp = fopen("/proc/uptime", "r");
+
+    if (fp == NULL) {
+        perror("cinfo: /proc/uptime");
+        return 1;
+    }
+
+    double uptime_seconds;
+
+    if (fscanf(fp, "%lf", &uptime_seconds) != 1) {
+        fprintf(stderr, "cinfo: could not read uptime information\n");
+        fclose(fp);
+        return 1;
+    }
+
+    fclose(fp);
+
+    unsigned long long seconds = (unsigned long long)uptime_seconds;
+    unsigned long long days = seconds / 86400;
+    unsigned long long hours = (seconds % 86400) / 3600;
+    unsigned long long minutes = (seconds % 3600) / 60;
+    unsigned long long secs = seconds % 60;
+
+    printf("Uptime: ");
+    if (days > 0)
+        printf("%llu days, ", days);
+    printf("%llu hours, %llu minutes, %llu seconds\n",
+           hours, minutes, secs);
+
+    return 0;
+}
+
 static int show_disk(void)
 {
     struct statvfs fs;
@@ -136,6 +170,7 @@ int main(int argc, char *argv[])
         printf("  --memory     Show RAM usage\n");
         printf("  --load       Show system load averages\n");
         printf("  --disk       Show root filesystem usage\n");
+        printf("  --uptime     Show system uptime\n");
         printf("  --all        Show all system information\n");
         return 0;
     }
@@ -157,6 +192,8 @@ int main(int argc, char *argv[])
         return show_load();
     if (strcmp(argv[1], "--disk") == 0)
         return show_disk();
+    if (strcmp(argv[1], "--uptime") == 0)
+        return show_uptime();
 
     if (strcmp(argv[1], "--cpu") == 0) {
         struct utsname u;
@@ -191,6 +228,8 @@ int main(int argc, char *argv[])
         if (show_memory() != 0) status = 1;
         putchar('\n');
         if (show_load() != 0) status = 1;
+        putchar('\n');
+        if (show_uptime() != 0) status = 1;
         putchar('\n');
         if (show_disk() != 0) status = 1;
         return status;
