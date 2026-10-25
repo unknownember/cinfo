@@ -1,5 +1,8 @@
 CC ?= cc
-CFLAGS ?= -Wall -Wextra -O3
+CFLAGS ?= -Wall -Wextra -Wpedantic -O3
+LDFLAGS ?=
+
+.PHONY: all install clean
 
 all: cinfo
 
