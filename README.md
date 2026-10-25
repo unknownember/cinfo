@@ -1,21 +1,28 @@
 # cinfo
 
-A tiny, fast Linux system information tool written in pure C.
+**A tiny, fast Linux system information tool written in 94.5% C.**
+
+`cinfo` is a command-line utility that displays useful information about your Linux system, including hardware, memory, processes, networking, and filesystem usage.
 
 ## Features
 
 - **System information:** OS, kernel, architecture, online CPU count, and username
-- **CPU:** architecture and online processor count
-- **Kernel:** kernel version
+- **Host information:** hostname and Linux distribution
+- **CPU:** processor model, architecture, and online processor count
+- **GPU:** graphics device vendor and device IDs, and driver name when available
 - **Memory:** total and available RAM
-- **Load:** 1-, 5-, and 15-minute system load averages
-- **Disk:** root filesystem capacity, used space, and available space
-- **Combined report:** display all supported information at once
+- **Load average:** 1-, 5-, and 15-minute system load averages
+- **Uptime:** system uptime in a readable format
+- **Processes:** current process count
+- **Users:** logged-in terminal sessions
+- **Networking:** IPv4 and IPv6 addresses for network interfaces
+- **Disk:** total, used, and available space on the root filesystem
+- **Combined report:** display all supported information with one command
 
 ## Requirements
 
 - Linux
-- A C compiler (such as GCC or Clang)
+- A C compiler, such as GCC or Clang
 - GNU Make
 - glibc
 
@@ -29,7 +36,7 @@ cd cinfo
 make
 ```
 
-Run it directly from the project directory:
+Run `cinfo` directly from the project directory:
 
 ```bash
 ./cinfo --all
@@ -37,47 +44,59 @@ Run it directly from the project directory:
 
 ## Install
 
-Install to `/usr/bin/cinfo`:
+Install the executable to `/usr/bin/cinfo`:
 
 ```bash
 sudo make install
 ```
 
-To remove the executable:
+To remove the installed executable:
 
 ```bash
 sudo rm /usr/bin/cinfo
 ```
 
+To remove the locally built executable from the project directory:
+
+```bash
+make clean
+```
+
 ## Usage
 
-```text
+Run `cinfo --help` to display the available options.
+
+```bash
 cinfo --help
 cinfo --version
-cinfo --sysinfo
-cinfo --cpu
-cinfo --kernel
-cinfo --memory
-cinfo --load
-cinfo --disk
 cinfo --all
 ```
 
+### Command-line options
+
 | Option | Description |
 |---|---|
-| `-h`, `--help` | Show help |
-| `--version` | Show version |
+| `-h`, `--help` | Display help |
+| `--version` | Display the cinfo version |
 | `--sysinfo` | General system information |
-| `--cpu` | CPU architecture and online CPU count |
+| `--host` | Hostname and distribution |
+| `--cpu` | CPU model and processor information |
+| `--gpu` | GPU device IDs and driver information |
 | `--kernel` | Kernel version |
-| `--memory` | RAM usage information |
+| `--memory` | Total and available RAM |
 | `--load` | System load averages |
+| `--uptime` | System uptime |
+| `--processes` | Current process count |
+| `--users` | Logged-in terminal sessions |
+| `--network` | Network interface IP addresses |
 | `--disk` | Root filesystem usage |
-| `--all` | Display all information |
+| `--all` | Display all supported information |
 
 ## Arch Linux package
 
-An Arch `PKGBUILD` is included in this repository. To build a package locally:
+An Arch Linux `PKGBUILD` is included in this repository.
+
+To build and install the package locally:
 
 ```bash
 makepkg -si
@@ -91,4 +110,4 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE).
 
 ## Source
 
-https://github.com/unknownember/cinfo
+[github.com/unknownember/cinfo](https://github.com/unknownember/cinfo)
