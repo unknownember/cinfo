@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/utsname.h>
 #include <sys/statvfs.h>
+#include <utmp.h>
 
 static int sysinfo(void)
 {
@@ -388,6 +389,32 @@ static int show_gpu(void)
     return status;
 }
 
+static int show_users(void)
+{
+    setutent();
+
+    size_t count = 0;
+    struct utmp *entry;
+
+    puts("Logged-in terminal sessions:");
+    while ((entry = getutent()) != NULL) {
+        if (entry->ut_type != USER_PROCESS)
+            continue;
+
+        printf("  %.*s on %.*s\n",
+               (int)sizeof(entry->ut_user), entry->ut_user,
+               (int)sizeof(entry->ut_line), entry->ut_line);
+        count++;
+    }
+
+    endutent();
+
+    if (count == 0)
+        puts("  None found");
+    printf("User sessions: %zu\n", count);
+    return 0;
+}
+
 static int show_disk(void)
 {
     struct statvfs fs;
@@ -439,6 +466,7 @@ int main(int argc, char *argv[])
         printf("  --host       Show hostname and distribution\n");
         printf("  --processes  Show process count\n");
         printf("  --gpu        Show graphics devices\n");
+        printf("  --users      Show logged-in terminal sessions\n");
         printf("  --all        Show all system information\n");
         return 0;
     }
@@ -468,6 +496,8 @@ int main(int argc, char *argv[])
         return show_processes();
     if (strcmp(argv[1], "--gpu") == 0)
         return show_gpu();
+    if (strcmp(argv[1], "--users") == 0)
+        return show_users();
 
     if (strcmp(argv[1], "--cpu") == 0)
         return show_cpu();
@@ -498,6 +528,8 @@ int main(int argc, char *argv[])
         if (show_cpu() != 0) status = 1;
         putchar('\n');
         if (show_gpu() != 0) status = 1;
+        putchar('\n');
+        if (show_users() != 0) status = 1;
         putchar('\n');
         if (show_disk() != 0) status = 1;
         return status;
