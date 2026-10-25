@@ -527,7 +527,7 @@ int main(int argc, char *argv[])
     }
 
     if (strcmp(argv[1], "--version") == 0) {
-        puts("cinfo 1.0.2");
+        puts("cinfo 1.1.0");
         return 0;
     }
     if (strcmp(argv[1], "--sysinfo") == 0)
