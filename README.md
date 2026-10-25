@@ -1,6 +1,6 @@
 # cinfo
 
-**A tiny, fast Linux system information tool written in 94.5% C.**
+**A tiny, fast Linux system information tool written in 90% C.**
 
 `cinfo` is a command-line utility that displays useful information about your Linux system, including hardware, memory, processes, networking, and filesystem usage.
 
