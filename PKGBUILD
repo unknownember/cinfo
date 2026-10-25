@@ -19,4 +19,5 @@ build() {
 package() {
     cd "$srcdir/$pkgname-$pkgver"
     install -Dm755 cinfo "$pkgdir/usr/bin/cinfo"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
