@@ -9,7 +9,7 @@ license=('MIT')
 depends=('glibc')
 makedepends=('make')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/unknownember/cinfo/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('c5e815aa5fbbf3eb8e28f0be9d3c899d0171d0737997a59f58a04be314f638d1')
+sha256sums=('4a4af95d5fc659fec005a4556df47db7cf04ca146af32233681a0010ba8e627b')
 
 build() {
     cd "$srcdir/$pkgname-$pkgver"
