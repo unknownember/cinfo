@@ -9,6 +9,9 @@
 #include <sys/utsname.h>
 #include <sys/statvfs.h>
 #include <utmp.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 static int sysinfo(void)
 {
@@ -415,6 +418,52 @@ static int show_users(void)
     return 0;
 }
 
+static int show_network(void)
+{
+    struct ifaddrs *interfaces = NULL;
+    if (getifaddrs(&interfaces) != 0) {
+        perror("cinfo: getifaddrs");
+        return 1;
+    }
+
+    puts("Network interfaces:");
+    int found = 0;
+
+    for (struct ifaddrs *item = interfaces; item != NULL; item = item->ifa_next) {
+        if (item->ifa_addr == NULL)
+            continue;
+
+        int family = item->ifa_addr->sa_family;
+        if (family != AF_INET && family != AF_INET6)
+            continue;
+
+        char address[INET6_ADDRSTRLEN];
+        const void *source;
+
+        if (family == AF_INET) {
+            source = &((struct sockaddr_in *)item->ifa_addr)->sin_addr;
+        } else {
+            source = &((struct sockaddr_in6 *)item->ifa_addr)->sin6_addr;
+        }
+
+        if (inet_ntop(family, source, address, sizeof(address)) == NULL) {
+            perror("cinfo: inet_ntop");
+            freeifaddrs(interfaces);
+            return 1;
+        }
+
+        printf("  %s: %s\n", item->ifa_name, address);
+        found = 1;
+    }
+
+    freeifaddrs(interfaces);
+
+    if (!found)
+        puts("  No IPv4 or IPv6 addresses found");
+
+    return 0;
+}
+
 static int show_disk(void)
 {
     struct statvfs fs;
@@ -467,6 +516,7 @@ int main(int argc, char *argv[])
         printf("  --processes  Show process count\n");
         printf("  --gpu        Show graphics devices\n");
         printf("  --users      Show logged-in terminal sessions\n");
+        printf("  --network    Show network interfaces and addresses\n");
         printf("  --all        Show all system information\n");
         return 0;
     }
@@ -498,6 +548,8 @@ int main(int argc, char *argv[])
         return show_gpu();
     if (strcmp(argv[1], "--users") == 0)
         return show_users();
+    if (strcmp(argv[1], "--network") == 0)
+        return show_network();
 
     if (strcmp(argv[1], "--cpu") == 0)
         return show_cpu();
@@ -530,6 +582,8 @@ int main(int argc, char *argv[])
         if (show_gpu() != 0) status = 1;
         putchar('\n');
         if (show_users() != 0) status = 1;
+        putchar('\n');
+        if (show_network() != 0) status = 1;
         putchar('\n');
         if (show_disk() != 0) status = 1;
         return status;
