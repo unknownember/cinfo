@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <sys/utsname.h>
 #include <sys/statvfs.h>
@@ -184,6 +186,43 @@ static int show_uptime(void)
     return 0;
 }
 
+static int show_processes(void)
+{
+    DIR *proc = opendir("/proc");
+    if (proc == NULL) {
+        perror("cinfo: opendir /proc");
+        return 1;
+    }
+
+    size_t count = 0;
+    struct dirent *entry;
+
+    while ((entry = readdir(proc)) != NULL) {
+        const unsigned char *name = (const unsigned char *)entry->d_name;
+        if (*name == '\0')
+            continue;
+
+        int numeric = 1;
+        for (const unsigned char *ch = name; *ch != '\0'; ch++) {
+            if (!isdigit(*ch)) {
+                numeric = 0;
+                break;
+            }
+        }
+
+        if (numeric)
+            count++;
+    }
+
+    if (closedir(proc) != 0) {
+        perror("cinfo: closedir /proc");
+        return 1;
+    }
+
+    printf("Processes:    %zu\n", count);
+    return 0;
+}
+
 static int show_disk(void)
 {
     struct statvfs fs;
@@ -233,6 +272,7 @@ int main(int argc, char *argv[])
         printf("  --disk       Show root filesystem usage\n");
         printf("  --uptime     Show system uptime\n");
         printf("  --host       Show hostname and distribution\n");
+        printf("  --processes  Show process count\n");
         printf("  --all        Show all system information\n");
         return 0;
     }
@@ -258,6 +298,8 @@ int main(int argc, char *argv[])
         return show_uptime();
     if (strcmp(argv[1], "--host") == 0)
         return show_host();
+    if (strcmp(argv[1], "--processes") == 0)
+        return show_processes();
 
     if (strcmp(argv[1], "--cpu") == 0) {
         struct utsname u;
@@ -296,6 +338,7 @@ int main(int argc, char *argv[])
         if (show_uptime() != 0) status = 1;
         putchar('\n');
         if (show_host() != 0) status = 1;
+        if (show_processes() != 0) status = 1;
         putchar('\n');
         if (show_disk() != 0) status = 1;
         return status;
