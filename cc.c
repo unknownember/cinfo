@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     }
 
     if (argc == 2 && strcmp(argv[1], "--version") == 0) {
-        puts("cinfo 1.0.0");
+        puts("cinfo 1.0.2");
         return 0;
     }
 
