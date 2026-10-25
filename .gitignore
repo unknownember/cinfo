@@ -4,3 +4,6 @@ pkg/
 *.pkg.tar.zst.sig
 
 *.tar.gz
+
+# Compiled executable
+/cinfo
