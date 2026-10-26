@@ -41,27 +41,53 @@ static int sysinfo_func(void)
     return 0;
 }
 
-static int show_memory(void)
+static int show_memory_from(const char *path)
 {
-    FILE *fp = fopen("/proc/meminfo", "r");
+    FILE *fp = fopen(path, "r");
     if (fp == NULL) {
-        perror("cinfo: /proc/meminfo");
+        perror(path);
         return 1;
     }
 
     char line[256];
     unsigned long long total = 0, available = 0;
+    int total_found = 0, available_found = 0;
 
     while (fgets(line, sizeof line, fp)) {
-        if (sscanf(line, "MemTotal: %llu kB", &total) == 1)
-            continue;
-        if (sscanf(line, "MemAvailable: %llu kB", &available) == 1)
-            break;
+        char number[32], unit[8], extra;
+        unsigned long long value;
+        char *end;
+
+        int fields = sscanf(line, "MemTotal: %31s %7s %c",
+                            number, unit, &extra);
+        if (fields == 2 && number[0] != '-' &&
+            number[0] != '+' && strcmp(unit, "kB") == 0) {
+            errno = 0;
+            value = strtoull(number, &end, 10);
+            if (errno == 0 && *number != '\0' && *end == '\0') {
+                total = value;
+                total_found = 1;
+                continue;
+            }
+        }
+
+        fields = sscanf(line, "MemAvailable: %31s %7s %c",
+                        number, unit, &extra);
+        if (fields == 2 && number[0] != '-' &&
+            number[0] != '+' && strcmp(unit, "kB") == 0) {
+            errno = 0;
+            value = strtoull(number, &end, 10);
+            if (errno == 0 && *number != '\0' && *end == '\0') {
+                available = value;
+                available_found = 1;
+            }
+        }
     }
 
+    int read_error = ferror(fp);
     fclose(fp);
 
-    if (total == 0) {
+    if (read_error || !total_found || total == 0 || !available_found) {
         fprintf(stderr, "cinfo: could not read memory information\n");
         return 1;
     }
@@ -69,6 +95,11 @@ static int show_memory(void)
     printf("Total RAM:     %.2f GiB\n", total / 1048576.0);
     printf("Available RAM: %.2f GiB\n", available / 1048576.0);
     return 0;
+}
+
+static int show_memory(void)
+{
+    return show_memory_from("/proc/meminfo");
 }
 
 

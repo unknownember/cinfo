@@ -21,3 +21,4 @@ test: cinfo
 	sh tests/cli.sh
 	sh tests/distro.sh
 	sh tests/gpu.sh
+	sh tests/memory.sh
