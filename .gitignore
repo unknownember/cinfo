@@ -1,4 +1,4 @@
-src/
+/src/cinfo-*/
 pkg/
 *.pkg.tar.zst
 *.pkg.tar.zst.sig

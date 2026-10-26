@@ -6,31 +6,68 @@ if [ ! -x ./cinfo ]; then
     exit 1
 fi
 
-check() {
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT HUP INT TERM
+
+pass() {
+    printf 'PASS: %s\n' "$1"
+}
+
+check_output() {
     name=$1
-    expected=$2
-    shift 2
-    set +e
-    ./cinfo "$@" >/dev/null 2>&1
-    actual=$?
-    set -e
-    if [ "$actual" -eq "$expected" ]; then
-        printf 'PASS: %-24s exit=%s\n' "$name" "$actual"
+    shift
+    if ./cinfo "$@" >"$tmp/out" 2>"$tmp/err"; then
+        if [ -s "$tmp/out" ]; then
+            pass "$name (exit 0, non-empty output)"
+        else
+            printf 'FAIL: %s produced empty stdout\n' "$name" >&2
+            exit 1
+        fi
     else
-        printf 'FAIL: %-24s expected=%s actual=%s\n' "$name" "$expected" "$actual" >&2
+        rc=$?
+        printf 'FAIL: %s exited %s\n' "$name" "$rc" >&2
+        cat "$tmp/err" >&2
         exit 1
     fi
 }
 
-check "no arguments" 0
-for opt in --sysinfo --help --version --cpu --kernel --memory --load --disk --uptime --host --processes --gpu --users --network --all; do
-    check "$opt" 0 "$opt"
+check_output "no arguments"
+for opt in --sysinfo --help --cpu --kernel --memory --load --disk --uptime --host --processes --gpu --users --network --all; do
+    check_output "$opt" "$opt"
 done
-check "invalid option" 2 --definitely-invalid
-check "extra CPU argument" 2 --cpu extra
-check "extra help argument" 2 --help extra
-check "extra version argument" 2 --version extra
-check "double dash" 2 --
-check "single dash" 2 -
 
-printf '\nAll 21 CLI checks passed.\n'
+if ! ./cinfo --version >"$tmp/out" 2>"$tmp/err"; then
+    printf 'FAIL: --version returned an error\n' >&2
+    exit 1
+fi
+if ! grep -Fq '1.2.0-rc1' "$tmp/out"; then
+    printf 'FAIL: --version did not report 1.2.0-rc1\n' >&2
+    cat "$tmp/out" >&2
+    exit 1
+fi
+pass "--version reports 1.2.0-rc1"
+
+check_error() {
+    name=$1
+    shift
+    set +e
+    ./cinfo "$@" >"$tmp/out" 2>"$tmp/err"
+    rc=$?
+    set -e
+    if [ "$rc" -eq 2 ] && [ -s "$tmp/err" ]; then
+        pass "$name (exit 2, error message)"
+    else
+        printf 'FAIL: %s (exit=%s)\n' "$name" "$rc" >&2
+        cat "$tmp/err" >&2
+        exit 1
+    fi
+}
+
+check_error "invalid option" --definitely-invalid
+check_error "extra CPU argument" --cpu extra
+check_error "extra help argument" --help extra
+check_error "extra version argument" --version extra
+check_error "double dash" --
+check_error "single dash" -
+
+printf '\nAll CLI regression checks passed.\n'
