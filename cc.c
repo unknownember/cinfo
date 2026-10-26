@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <dirent.h>
 #include <ctype.h>
@@ -13,7 +14,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define VERSION "1.1.1"
+#define VERSION "1.1.2"
 
 static int sysinfo_func(void)
 {
@@ -97,9 +98,118 @@ static int show_load(void)
 }
 
 
+static int read_distro(const char *path, char distro[256])
+{
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL)
+        return -1;
+
+    char *line = NULL;
+    size_t capacity = 0;
+    char pretty_name[256] = "";
+    char name[256] = "";
+    char version[256] = "";
+    int read_error = 0;
+    int read_errno = 0;
+
+    for (;;) {
+        errno = 0;
+        ssize_t line_length = getline(&line, &capacity, fp);
+        if (line_length == -1) {
+            if (ferror(fp) || errno != 0) {
+                read_error = 1;
+                read_errno = errno != 0 ? errno : EIO;
+            }
+            break;
+        }
+
+        char *value;
+        char *target;
+
+        if (strncmp(line, "PRETTY_NAME=", 12) == 0) {
+            value = line + 12;
+            target = pretty_name;
+        } else if (strncmp(line, "NAME=", 5) == 0) {
+            value = line + 5;
+            target = name;
+        } else if (strncmp(line, "VERSION=", 8) == 0) {
+            value = line + 8;
+            target = version;
+        } else {
+            continue;
+        }
+
+        value[strcspn(value, "\r\n")] = '\0';
+        size_t len = strlen(value);
+        if (len > 0 && (value[0] == 34 || value[0] == 39) &&
+            (len < 2 || value[len - 1] != value[0]))
+            continue;
+        if (len >= 2 &&
+            ((value[0] == '"' && value[len - 1] == '"') ||
+             (value[0] == '\'' && value[len - 1] == '\''))) {
+            char quote = value[0];
+            value[len - 1] = '\0';
+            value++;
+            if (quote == '"') {
+                char parsed[256];
+                size_t i = 0, j = 0;
+                while (value[i] != '\0' && j < sizeof(parsed) - 1) {
+                    if (value[i] == '\\' && value[i + 1] != '\0')
+                        i++;
+                    parsed[j++] = value[i++];
+                }
+                parsed[j] = '\0';
+                snprintf(target, 256, "%s", parsed);
+            } else {
+                snprintf(target, 256, "%s", value);
+            }
+        } else {
+            snprintf(target, 256, "%s", value);
+        }
+    }
+
+    free(line);
+    errno = 0;
+    if (fclose(fp) != 0) {
+        if (!read_error)
+            read_errno = errno != 0 ? errno : EIO;
+        read_error = 1;
+    }
+    if (read_error) {
+        errno = read_errno;
+        return -1;
+    }
+
+    if (pretty_name[0] != '\0')
+        snprintf(distro, 256, "%s", pretty_name);
+    else if (name[0] != '\0' && version[0] != '\0') {
+        size_t used = strlen(name);
+        if (used > 256 - 1)
+            used = 256 - 1;
+        memcpy(distro, name, used);
+
+        if (used < 256 - 1)
+            distro[used++] = ' ';
+
+        size_t remaining = 256 - 1 - used;
+        size_t version_len = strlen(version);
+        if (version_len > remaining)
+            version_len = remaining;
+        memcpy(distro + used, version, version_len);
+        distro[used + version_len] = '\0';
+    }
+    else if (name[0] != '\0')
+        snprintf(distro, 256, "%s", name);
+    else
+        distro[0] = '\0';
+
+    return distro[0] != '\0' ? 0 : 1;
+}
+
 static int show_host(void)
 {
     char hostname[256];
+    char distro[256];
 
     if (gethostname(hostname, sizeof(hostname)) != 0) {
         perror("cinfo: gethostname");
@@ -107,48 +217,13 @@ static int show_host(void)
     }
     hostname[sizeof(hostname) - 1] = '\0';
 
-    FILE *fp = fopen("/etc/os-release", "r");
-    if (fp == NULL) {
-        perror("cinfo: /etc/os-release");
+    int result = read_distro("/etc/os-release", distro);
+    if (result == -1) {
+        perror("cinfo: reading os-release");
         return 1;
     }
-
-    char *line = NULL;
-    size_t capacity = 0;
-    char distro[256] = "";
-    int read_error = 0;
-
-    while (getline(&line, &capacity, fp) != -1) {
-        if (strncmp(line, "PRETTY_NAME=", 12) == 0) {
-            char *value = line + 12;
-            value[strcspn(value, "\r\n")] = '\0';
-
-            size_t len = strlen(value);
-            if (len >= 2 &&
-                ((value[0] == '"' && value[len - 1] == '"') ||
-                 (value[0] == '\'' && value[len - 1] == '\''))) {
-                value[len - 1] = '\0';
-                value++;
-            }
-
-            snprintf(distro, sizeof(distro), "%s", value);
-            break;
-        }
-    }
-
-    if (ferror(fp))
-        read_error = 1;
-
-    free(line);
-    fclose(fp);
-
-    if (read_error) {
-        fprintf(stderr, "cinfo: failed reading /etc/os-release\n");
-        return 1;
-    }
-
-    if (distro[0] == '\0') {
-        fprintf(stderr, "cinfo: PRETTY_NAME not found in /etc/os-release\n");
+    if (result == 1) {
+        fprintf(stderr, "cinfo: no usable PRETTY_NAME or NAME in os-release\n");
         return 1;
     }
 
@@ -156,7 +231,6 @@ static int show_host(void)
     printf("Distribution: %s\n", distro);
     return 0;
 }
-
 
 static int show_uptime(void)
 {
@@ -284,11 +358,11 @@ static int show_cpu(void)
     return 0;
 }
 
-static int show_gpu(void)
+static int show_gpu_from(const char *drm_path)
 {
-    DIR *drm = opendir("/sys/class/drm");
+    DIR *drm = opendir(drm_path);
     if (drm == NULL) {
-        perror("cinfo: opendir /sys/class/drm");
+        perror("cinfo: opendir DRM directory");
         return 1;
     }
 
@@ -301,13 +375,19 @@ static int show_gpu(void)
             !isdigit((unsigned char)entry->d_name[4]))
             continue;
 
+        const char *suffix = entry->d_name + 4;
+        while (isdigit((unsigned char)*suffix))
+            suffix++;
+        if (*suffix != '\0')
+            continue;
+
         char path[512];
         char vendor[64];
         char device[64];
         char driver[128];
 
-        int n = snprintf(path, sizeof(path),
-                         "/sys/class/drm/%s/device/vendor", entry->d_name);
+        int n = snprintf(path, sizeof(path), "%s/%s/device/vendor",
+                         drm_path, entry->d_name);
         if (n < 0 || (size_t)n >= sizeof(path)) {
             fprintf(stderr, "cinfo: DRM path too long\n");
             status = 1;
@@ -315,16 +395,18 @@ static int show_gpu(void)
         }
 
         FILE *fp = fopen(path, "r");
-        if (fp == NULL) {
-            /* Not every DRM card entry necessarily exposes a PCI device. */
+        if (fp == NULL)
             continue;
-        }
+
         if (fgets(vendor, sizeof(vendor), fp) == NULL) {
             if (ferror(fp)) {
                 perror("cinfo: read GPU vendor");
                 status = 1;
             }
-            fclose(fp);
+            if (fclose(fp) != 0) {
+                perror("cinfo: close GPU vendor");
+                status = 1;
+            }
             continue;
         }
         if (fclose(fp) != 0) {
@@ -334,21 +416,26 @@ static int show_gpu(void)
         }
         vendor[strcspn(vendor, "\r\n")] = '\0';
 
-        n = snprintf(path, sizeof(path),
-                     "/sys/class/drm/%s/device/device", entry->d_name);
+        n = snprintf(path, sizeof(path), "%s/%s/device/device",
+                     drm_path, entry->d_name);
         if (n < 0 || (size_t)n >= sizeof(path)) {
             fprintf(stderr, "cinfo: DRM path too long\n");
             status = 1;
             continue;
         }
+
         fp = fopen(path, "r");
-        if (fp == NULL || fgets(device, sizeof(device), fp) == NULL) {
-            if (fp != NULL) {
-                if (ferror(fp)) {
-                    perror("cinfo: read GPU device");
-                    status = 1;
-                }
-                fclose(fp);
+        if (fp == NULL)
+            continue;
+
+        if (fgets(device, sizeof(device), fp) == NULL) {
+            if (ferror(fp)) {
+                perror("cinfo: read GPU device");
+                status = 1;
+            }
+            if (fclose(fp) != 0) {
+                perror("cinfo: close GPU device");
+                status = 1;
             }
             continue;
         }
@@ -359,8 +446,8 @@ static int show_gpu(void)
         }
         device[strcspn(device, "\r\n")] = '\0';
 
-        n = snprintf(path, sizeof(path),
-                     "/sys/class/drm/%s/device/driver", entry->d_name);
+        n = snprintf(path, sizeof(path), "%s/%s/device/driver",
+                     drm_path, entry->d_name);
         if (n < 0 || (size_t)n >= sizeof(path)) {
             fprintf(stderr, "cinfo: DRM path too long\n");
             status = 1;
@@ -383,15 +470,19 @@ static int show_gpu(void)
     }
 
     if (closedir(drm) != 0) {
-        perror("cinfo: closedir /sys/class/drm");
+        perror("cinfo: closedir DRM directory");
         status = 1;
     }
 
-    if (!found && status == 0) {
+    if (!found && status == 0)
         puts("GPU:          No DRM GPU devices found");
-    }
 
     return status;
+}
+
+static int show_gpu(void)
+{
+    return show_gpu_from("/sys/class/drm");
 }
 
 static int show_users(void)
@@ -505,21 +596,21 @@ int main(int argc, char *argv[])
         printf("cinfo - a tiny Linux system information tool\n\n");
         printf("Usage: cinfo [OPTION]\n\n");
         printf("Options:\n");
-        printf("  --sysinfo    Show system information\n");
-        printf("  --help       Show this help message\n");
-        printf("  --version    Show version information\n");
+        printf("  --sysinfo    Show basic system information\n");
+        printf("  --all        Show all available system information\n\n");
         printf("  --cpu        Show CPU model, architecture and online processor count\n");
-        printf("  --kernel     Show kernel information\n");
+        printf("  --kernel     Show kernel name and release\n");
         printf("  --memory     Show RAM usage\n");
         printf("  --load       Show system load averages\n");
-        printf("  --disk       Show root filesystem usage\n");
         printf("  --uptime     Show system uptime\n");
-        printf("  --host       Show hostname and distribution\n");
+        printf("  --host       Show hostname and Linux distribution\n");
         printf("  --processes  Show process count\n");
         printf("  --gpu        Show graphics devices\n");
         printf("  --users      Show logged-in terminal sessions\n");
         printf("  --network    Show network interfaces and addresses\n");
-        printf("  --all        Show all system information\n");
+        printf("  --disk       Show root filesystem usage\n\n");
+        printf("  -h, --help   Show this help message\n");
+        printf("  --version    Show version information\n");
         return 0;
     }
 
