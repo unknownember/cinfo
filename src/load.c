@@ -25,6 +25,7 @@ int show_load(void)
 
     fclose(fp);
 
+    cinfo_heading("System Load");
     printf("Load average: %.2f, %.2f, %.2f\n",
            one, five, fifteen);
     puts("              1 min  5 min  15 min");

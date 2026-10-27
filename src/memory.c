@@ -31,6 +31,7 @@ int show_memory(void)
         return 1;
     }
 
+    cinfo_heading("Memory Information");
     printf("Total RAM:     %.2f GiB\n", total / 1048576.0);
     printf("Available RAM: %.2f GiB\n", available / 1048576.0);
     return 0;

@@ -61,6 +61,7 @@ int show_cpu(void)
         return 1;
     }
 
+    cinfo_heading("CPU Information");
     printf("CPU:          %s\n", model[0] != '\0' ? model : "Unknown");
     printf("Architecture: %s\n", u.machine);
     printf("Online CPUs:  %ld\n", cpus);

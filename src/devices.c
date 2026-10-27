@@ -107,6 +107,8 @@ int show_gpu(void)
                 memmove(driver, last + 1, strlen(last + 1) + 1);
         }
 
+        if (!found)
+            cinfo_heading("GPU Information");
         printf("GPU (%s): vendor %s, device %s, driver %s\n",
                entry->d_name, vendor, device, driver);
         found = 1;
