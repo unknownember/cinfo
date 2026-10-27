@@ -21,8 +21,6 @@
 - **Users** — logged-in terminal sessions
 - **Networking** — IPv4 and IPv6 addresses for network interfaces
 - **Disk usage** — total, used, and available space on the root filesystem
-- **File fetcher** — list matching regular files and calculate their combined size
-- **Color output** — automatic, forced, or disabled ANSI colors
 - **Combined report** — display all supported system information with one command
 
 ## Requirements
@@ -104,13 +102,29 @@ cinfo --all
 | `--users` | Logged-in terminal sessions |
 | `--network` | Network interface IP addresses |
 | `--disk` | Root filesystem usage |
-| `--fetch PATTERN` | List matching regular files and report their combined size |
-| `--color=MODE` | Configure colored output: `auto`, `always`, or `never` |
 | `--all` | Display all supported system information |
 
-### File fetcher: `--fetch`
+## Arch Linux package
 
-Pass one file path or a quoted glob pattern. The fetcher lists matching regular files and prints their total size.
+An Arch Linux `PKGBUILD` is included in this repository.
+
+Build and install the package locally with:
+
+```bash
+makepkg -si
+```
+
+The package recipe downloads a versioned source archive from GitHub and verifies it using SHA-256.
+
+## Latest pre-release: v1.2.0-rc2
+
+[**Cinfo v1.2.0-rc2**](https://github.com/unknownember/cinfo/releases/tag/v1.2.0-rc2) includes improved terminal output, ANSI-colored section headings, configurable color modes, `NO_COLOR` support in automatic mode, and file fetching with glob expansion and combined file-size reporting.
+
+The options below are available in **v1.2.0-rc2**; they are not yet part of the current `main` branch's command-line interface.
+
+### `--fetch PATTERN`
+
+Pass a file path or a quoted glob pattern. The fetcher lists matching regular files and prints their total size.
 
 ```bash
 cinfo --fetch ./README.md
@@ -119,9 +133,9 @@ cinfo --fetch './src/*.c'
 
 Quote glob patterns so the shell passes the pattern to `cinfo` for expansion. If no files match, `cinfo` reports the problem.
 
-### Color output: `--color`
+### `--color=MODE`
 
-Choose how ANSI colors are handled:
+Configure ANSI color output with one of these modes:
 
 | Mode | Behavior |
 |---|---|
@@ -139,23 +153,7 @@ cinfo --color=never --all
 
 The default mode is `auto`.
 
-## Arch Linux package
-
-An Arch Linux `PKGBUILD` is included in this repository.
-
-Build and install the package locally with:
-
-```bash
-makepkg -si
-```
-
-The package recipe downloads a versioned source archive from GitHub and verifies it using SHA-256.
-
-## Latest pre-release
-
-[**Cinfo v1.2.0-rc2**](https://github.com/unknownember/cinfo/releases/tag/v1.2.0-rc2) adds improved terminal output, ANSI-colored section headings, configurable color modes, `NO_COLOR` support in automatic mode, and file fetching with glob expansion and combined file-size reporting.
-
-As a release candidate, it is intended for testing and is not the stable v1.2.0 release. See the [releases page](https://github.com/unknownember/cinfo/releases) for available versions.
+As a release candidate, v1.2.0-rc2 is intended for testing and is not the stable v1.2.0 release. See the [releases page](https://github.com/unknownember/cinfo/releases) for available versions.
 
 ## License
 
