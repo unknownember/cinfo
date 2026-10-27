@@ -14,7 +14,7 @@ source=(
     "LICENSE::https://raw.githubusercontent.com/unknownember/cinfo/v$pkgver/LICENSE"
 )
 sha256sums=('bd94bd98edeffba608eb15b254c19303f6077eac6f9241cb60b17b54e3d8ba19'
-            '7c158926d8e2ea5d39929e08444df62fde4b282a380cd5734b68aa2572134b73'
+            '6e8497fcc1e749bfe5c9f86c761dd07ab8ae50edb9ea4584b5c319cae557e419'
             '00742bca9f1a5332efc41b93a272950897bc845dca30612a6f05d88aab127c20')
 
 build() {
