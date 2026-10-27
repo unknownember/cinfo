@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define VERSION "1.1.3"
+#define VERSION "1.1.4"
 
 static int sysinfo_func(void)
 {
