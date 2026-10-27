@@ -22,3 +22,4 @@ test: cinfo
 	sh tests/distro.sh
 	sh tests/gpu.sh
 	sh tests/memory.sh
+	sh tests/load.sh

@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -103,29 +104,37 @@ static int show_memory(void)
 }
 
 
-static int show_load(void)
+static int show_load_from(const char *path)
 {
-    FILE *fp = fopen("/proc/loadavg", "r");
+    FILE *fp = fopen(path, "r");
 
     if (fp == NULL) {
-        perror("cinfo: /proc/loadavg");
+        if (strcmp(path, "/proc/loadavg") == 0)
+            perror("cinfo: /proc/loadavg");
+        else
+            perror(path);
         return 1;
     }
 
     double one, five, fifteen;
+    int parsed = fscanf(fp, "%lf %lf %lf", &one, &five, &fifteen);
+    fclose(fp);
 
-    if (fscanf(fp, "%lf %lf %lf", &one, &five, &fifteen) != 3) {
-        fprintf(stderr, "cinfo: could not read load averages\n");
-        fclose(fp);
+    if (parsed != 3 || !isfinite(one) || !isfinite(five) ||
+        !isfinite(fifteen) || one < 0.0 || five < 0.0 || fifteen < 0.0) {
+        fprintf(stderr, "cinfo: could not read valid load averages\n");
         return 1;
     }
-
-    fclose(fp);
 
     printf("Load average: %.2f, %.2f, %.2f\n",
            one, five, fifteen);
     puts("              1 min  5 min  15 min");
     return 0;
+}
+
+static int show_load(void)
+{
+    return show_load_from("/proc/loadavg");
 }
 
 
