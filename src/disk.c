@@ -30,7 +30,7 @@ int show_disk(void)
         (double)available / (1024.0 * 1024.0 * 1024.0);
     double percent = total ? 100.0 * (double)used / (double)total : 0.0;
 
-    puts("=== Root Filesystem ===");
+    cinfo_heading("=== Root Filesystem ===");
     printf("Total:     %.2f GiB\n", total_gib);
     printf("Used:      %.2f GiB (%.1f%%)\n", used_gib, percent);
     printf("Available: %.2f GiB\n", available_gib);

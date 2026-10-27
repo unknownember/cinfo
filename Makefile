@@ -4,7 +4,7 @@ CPPFLAGS ?=
 LDFLAGS ?=
 CPPFLAGS += -D_POSIX_C_SOURCE=200809L -Iinclude
 
-SOURCES = src/main.c src/system.c src/cpu.c src/memory.c src/load.c src/disk.c src/devices.c src/users.c src/network.c
+SOURCES = src/main.c src/system.c src/cpu.c src/memory.c src/load.c src/disk.c src/devices.c src/users.c src/network.c src/fetch.c src/color.c
 
 .PHONY: all install clean test
 

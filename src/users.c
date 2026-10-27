@@ -15,7 +15,7 @@ int show_users(void)
     size_t count = 0;
     struct utmp *entry;
 
-    puts("Logged-in terminal sessions:");
+    cinfo_heading("Logged-in terminal sessions:");
     while ((entry = getutent()) != NULL) {
         if (entry->ut_type != USER_PROCESS)
             continue;

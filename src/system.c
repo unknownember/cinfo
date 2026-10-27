@@ -33,7 +33,7 @@ int sysinfo_func(void)
         return 1;
     }
 
-    printf("=== System Information ===\n");
+    cinfo_heading("=== System Information ===");
     printf("OS:           %s\n", u.sysname);
     printf("Kernel:       %s\n", u.release);
     printf("Architecture: %s\n", u.machine);

@@ -22,7 +22,7 @@ int show_network(void)
         return 1;
     }
 
-    puts("Network interfaces:");
+    cinfo_heading("Network interfaces:");
     int found = 0;
 
     for (struct ifaddrs *item = interfaces; item != NULL; item = item->ifa_next) {

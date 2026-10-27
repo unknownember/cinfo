@@ -14,5 +14,9 @@ int show_gpu(void);
 int show_users(void);
 int show_network(void);
 int show_disk(void);
+int fetch_files(const char *pattern);
+extern int cinfo_colors_enabled;
+const char *cinfo_color(const char *sequence);
+void cinfo_heading(const char *text);
 
 #endif
