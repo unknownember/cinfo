@@ -21,7 +21,9 @@
 - **Users** — logged-in terminal sessions
 - **Networking** — IPv4 and IPv6 addresses for network interfaces
 - **Disk usage** — total, used, and available space on the root filesystem
-- **Combined report** — display all supported information with one command
+- **File fetcher** — list matching regular files and calculate their combined size
+- **Color output** — automatic, forced, or disabled ANSI colors
+- **Combined report** — display all supported system information with one command
 
 ## Requirements
 
@@ -102,7 +104,40 @@ cinfo --all
 | `--users` | Logged-in terminal sessions |
 | `--network` | Network interface IP addresses |
 | `--disk` | Root filesystem usage |
-| `--all` | Display all supported information |
+| `--fetch PATTERN` | List matching regular files and report their combined size |
+| `--color=MODE` | Configure colored output: `auto`, `always`, or `never` |
+| `--all` | Display all supported system information |
+
+### File fetcher: `--fetch`
+
+Pass one file path or a quoted glob pattern. The fetcher lists matching regular files and prints their total size.
+
+```bash
+cinfo --fetch ./README.md
+cinfo --fetch './src/*.c'
+```
+
+Quote glob patterns so the shell passes the pattern to `cinfo` for expansion. If no files match, `cinfo` reports the problem.
+
+### Color output: `--color`
+
+Choose how ANSI colors are handled:
+
+| Mode | Behavior |
+|---|---|
+| `auto` | Enable colors when standard output is a terminal; respect a non-empty `NO_COLOR` environment variable |
+| `always` | Force colors on |
+| `never` | Disable colors |
+
+Examples:
+
+```bash
+cinfo --color=auto --all
+cinfo --color=always --cpu
+cinfo --color=never --all
+```
+
+The default mode is `auto`.
 
 ## Arch Linux package
 
