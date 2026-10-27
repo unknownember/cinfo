@@ -40,12 +40,12 @@ if ! ./cinfo --version >"$tmp/out" 2>"$tmp/err"; then
     printf 'FAIL: --version returned an error\n' >&2
     exit 1
 fi
-if ! grep -Fq '1.2.0-rc1' "$tmp/out"; then
-    printf 'FAIL: --version did not report 1.2.0-rc1\n' >&2
+if ! grep -Fq '1.2.0-rc2' "$tmp/out"; then
+    printf 'FAIL: --version did not report 1.2.0-rc2\n' >&2
     cat "$tmp/out" >&2
     exit 1
 fi
-pass "--version reports 1.2.0-rc1"
+pass "--version reports 1.2.0-rc2"
 
 # --fetch expands quoted globs and reports file sizes.
 mkdir "$tmp/fetch"
