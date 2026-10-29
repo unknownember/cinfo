@@ -139,6 +139,16 @@ static int show_load(void)
 }
 
 
+static int has_non_whitespace(const char *value)
+{
+    for (const unsigned char *ch = (const unsigned char *)value;
+         *ch != '\0'; ch++) {
+        if (!isspace(*ch))
+            return 1;
+    }
+    return 0;
+}
+
 static int read_distro(const char *path, char distro[256])
 {
     FILE *fp = fopen(path, "r");
@@ -221,9 +231,9 @@ static int read_distro(const char *path, char distro[256])
         return -1;
     }
 
-    if (pretty_name[0] != '\0')
+    if (has_non_whitespace(pretty_name))
         snprintf(distro, 256, "%s", pretty_name);
-    else if (name[0] != '\0' && version[0] != '\0') {
+    else if (has_non_whitespace(name) && has_non_whitespace(version)) {
         size_t used = strlen(name);
         if (used > 256 - 1)
             used = 256 - 1;
@@ -239,7 +249,7 @@ static int read_distro(const char *path, char distro[256])
         memcpy(distro + used, version, version_len);
         distro[used + version_len] = '\0';
     }
-    else if (name[0] != '\0')
+    else if (has_non_whitespace(name))
         snprintf(distro, 256, "%s", name);
     else
         distro[0] = '\0';
