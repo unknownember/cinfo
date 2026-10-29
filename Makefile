@@ -23,3 +23,4 @@ test: cinfo
 	sh tests/gpu.sh
 	sh tests/memory.sh
 	sh tests/load.sh
+	sh tests/uptime.sh

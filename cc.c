@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <math.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -15,7 +16,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define VERSION "1.1.4"
+#define VERSION "1.1.5"
 
 static int sysinfo_func(void)
 {
@@ -272,12 +273,15 @@ static int show_host(void)
     return 0;
 }
 
-static int show_uptime(void)
+static int show_uptime_from(const char *path)
 {
-    FILE *fp = fopen("/proc/uptime", "r");
+    FILE *fp = fopen(path, "r");
 
     if (fp == NULL) {
-        perror("cinfo: /proc/uptime");
+        if (strcmp(path, "/proc/uptime") == 0)
+            perror("cinfo: /proc/uptime");
+        else
+            perror(path);
         return 1;
     }
 
@@ -290,6 +294,12 @@ static int show_uptime(void)
     }
 
     fclose(fp);
+
+    if (!isfinite(uptime_seconds) || uptime_seconds < 0.0 ||
+        uptime_seconds >= (double)ULLONG_MAX) {
+        fprintf(stderr, "cinfo: invalid uptime value\n");
+        return 1;
+    }
 
     unsigned long long seconds = (unsigned long long)uptime_seconds;
     unsigned long long days = seconds / 86400;
@@ -304,6 +314,11 @@ static int show_uptime(void)
            hours, minutes, secs);
 
     return 0;
+}
+
+static int show_uptime(void)
+{
+    return show_uptime_from("/proc/uptime");
 }
 
 static int show_processes(void)
