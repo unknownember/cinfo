@@ -331,18 +331,29 @@ static int show_uptime(void)
     return show_uptime_from("/proc/uptime");
 }
 
-static int show_processes(void)
+static int show_processes_from(const char *path)
 {
-    DIR *proc = opendir("/proc");
+    DIR *proc = opendir(path);
     if (proc == NULL) {
-        perror("cinfo: opendir /proc");
+        perror("cinfo: opendir process directory");
         return 1;
     }
 
     size_t count = 0;
     struct dirent *entry;
+    int status = 0;
 
-    while ((entry = readdir(proc)) != NULL) {
+    for (;;) {
+        errno = 0;
+        entry = readdir(proc);
+        if (entry == NULL) {
+            if (errno != 0) {
+                perror("cinfo: readdir process directory");
+                status = 1;
+            }
+            break;
+        }
+
         const unsigned char *name = (const unsigned char *)entry->d_name;
         if (*name == '\0')
             continue;
@@ -360,12 +371,20 @@ static int show_processes(void)
     }
 
     if (closedir(proc) != 0) {
-        perror("cinfo: closedir /proc");
-        return 1;
+        perror("cinfo: closedir process directory");
+        status = 1;
     }
+
+    if (status != 0)
+        return 1;
 
     printf("Processes:    %zu\n", count);
     return 0;
+}
+
+static int show_processes(void)
+{
+    return show_processes_from("/proc");
 }
 
 static int show_cpu(void)
