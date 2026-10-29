@@ -257,16 +257,44 @@ static int read_distro(const char *path, char distro[256])
     return distro[0] != '\0' ? 0 : 1;
 }
 
+static int validate_hostname(const char *hostname, size_t size)
+{
+    if (size == 0 || memchr(hostname, '\0', size) == NULL) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+
+    if (hostname[0] == '\0') {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return 0;
+}
+
+static int read_hostname(char *hostname, size_t size)
+{
+    if (size == 0) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    memset(hostname, 0xFF, size);
+    if (gethostname(hostname, size) != 0)
+        return -1;
+
+    return validate_hostname(hostname, size);
+}
+
 static int show_host(void)
 {
     char hostname[256];
     char distro[256];
 
-    if (gethostname(hostname, sizeof(hostname)) != 0) {
+    if (read_hostname(hostname, sizeof(hostname)) != 0) {
         perror("cinfo: gethostname");
         return 1;
     }
-    hostname[sizeof(hostname) - 1] = '\0';
 
     int result = read_distro("/etc/os-release", distro);
     if (result == -1) {
