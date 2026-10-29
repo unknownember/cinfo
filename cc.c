@@ -139,6 +139,16 @@ static int show_load(void)
 }
 
 
+static int has_non_whitespace(const char *value)
+{
+    for (const unsigned char *ch = (const unsigned char *)value;
+         *ch != '\0'; ch++) {
+        if (!isspace(*ch))
+            return 1;
+    }
+    return 0;
+}
+
 static int read_distro(const char *path, char distro[256])
 {
     FILE *fp = fopen(path, "r");
@@ -221,9 +231,9 @@ static int read_distro(const char *path, char distro[256])
         return -1;
     }
 
-    if (pretty_name[0] != '\0')
+    if (has_non_whitespace(pretty_name))
         snprintf(distro, 256, "%s", pretty_name);
-    else if (name[0] != '\0' && version[0] != '\0') {
+    else if (has_non_whitespace(name) && has_non_whitespace(version)) {
         size_t used = strlen(name);
         if (used > 256 - 1)
             used = 256 - 1;
@@ -239,7 +249,7 @@ static int read_distro(const char *path, char distro[256])
         memcpy(distro + used, version, version_len);
         distro[used + version_len] = '\0';
     }
-    else if (name[0] != '\0')
+    else if (has_non_whitespace(name))
         snprintf(distro, 256, "%s", name);
     else
         distro[0] = '\0';
@@ -247,16 +257,44 @@ static int read_distro(const char *path, char distro[256])
     return distro[0] != '\0' ? 0 : 1;
 }
 
+static int validate_hostname(const char *hostname, size_t size)
+{
+    if (size == 0 || memchr(hostname, '\0', size) == NULL) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+
+    if (hostname[0] == '\0') {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return 0;
+}
+
+static int read_hostname(char *hostname, size_t size)
+{
+    if (size == 0) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    memset(hostname, 0xFF, size);
+    if (gethostname(hostname, size) != 0)
+        return -1;
+
+    return validate_hostname(hostname, size);
+}
+
 static int show_host(void)
 {
     char hostname[256];
     char distro[256];
 
-    if (gethostname(hostname, sizeof(hostname)) != 0) {
+    if (read_hostname(hostname, sizeof(hostname)) != 0) {
         perror("cinfo: gethostname");
         return 1;
     }
-    hostname[sizeof(hostname) - 1] = '\0';
 
     int result = read_distro("/etc/os-release", distro);
     if (result == -1) {
@@ -321,18 +359,29 @@ static int show_uptime(void)
     return show_uptime_from("/proc/uptime");
 }
 
-static int show_processes(void)
+static int show_processes_from(const char *path)
 {
-    DIR *proc = opendir("/proc");
+    DIR *proc = opendir(path);
     if (proc == NULL) {
-        perror("cinfo: opendir /proc");
+        perror("cinfo: opendir process directory");
         return 1;
     }
 
     size_t count = 0;
     struct dirent *entry;
+    int status = 0;
 
-    while ((entry = readdir(proc)) != NULL) {
+    for (;;) {
+        errno = 0;
+        entry = readdir(proc);
+        if (entry == NULL) {
+            if (errno != 0) {
+                perror("cinfo: readdir process directory");
+                status = 1;
+            }
+            break;
+        }
+
         const unsigned char *name = (const unsigned char *)entry->d_name;
         if (*name == '\0')
             continue;
@@ -350,12 +399,20 @@ static int show_processes(void)
     }
 
     if (closedir(proc) != 0) {
-        perror("cinfo: closedir /proc");
-        return 1;
+        perror("cinfo: closedir process directory");
+        status = 1;
     }
+
+    if (status != 0)
+        return 1;
 
     printf("Processes:    %zu\n", count);
     return 0;
+}
+
+static int show_processes(void)
+{
+    return show_processes_from("/proc");
 }
 
 static int show_cpu(void)
