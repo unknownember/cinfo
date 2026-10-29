@@ -25,3 +25,4 @@ test: cinfo
 	sh tests/load.sh
 	sh tests/uptime.sh
 	sh tests/processes.sh
+	sh tests/hostname.sh
