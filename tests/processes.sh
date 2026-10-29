@@ -4,6 +4,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 
 cat > "$tmp/test.c" <<'C'
+#define _POSIX_C_SOURCE 200809L
 #include <dirent.h>
 
 static int inject_readdir_error;
