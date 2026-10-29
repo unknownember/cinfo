@@ -47,6 +47,9 @@ check() {
 check "pretty name preferred" 'NAME="Fallback OS"
 VERSION="2.0"
 PRETTY_NAME="Example Linux"' 'Example Linux'
+check "whitespace-only pretty name falls back" 'NAME="Fallback OS"
+VERSION="2.0"
+PRETTY_NAME="   "' 'Fallback OS 2.0'
 check "name plus version fallback" 'NAME="Example Linux"
 VERSION="2.0"' 'Example Linux 2.0'
 check "name only fallback" 'NAME="Example Linux"' 'Example Linux'
