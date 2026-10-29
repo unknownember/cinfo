@@ -24,3 +24,4 @@ test: cinfo
 	sh tests/memory.sh
 	sh tests/load.sh
 	sh tests/uptime.sh
+	sh tests/processes.sh
